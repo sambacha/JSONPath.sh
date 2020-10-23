@@ -46,9 +46,9 @@ main() {
 
       [[ $MULTIPASS -eq 1 ]] && {
         # replace filter expression with index sequence
-        SET=$(sed -rn 's/.*[[,"]+([0-9]+)[],].*/\1/p' $PASSFILE | tr '\n' ,)
+        SET=$(gsed -rn 's/.*[[,"]+([0-9]+)[],].*/\1/p' $PASSFILE | tr '\n' ,)
         SET=${SET%,}
-        QUERY=$(echo $QUERY | sed "s/?(@[^)]\+)/$SET/")
+        QUERY=$(echo $QUERY | gsed "s/?(@[^)]\+)/$SET/")
         [[ $DEBUG -eq 1 ]] && echo "QUERY=$QUERY" >/dev/stderr
         reset
         continue
@@ -82,7 +82,7 @@ sanity_checks() {
 # ---------------------------------------------------------------------------
 
   # Reset some vars
-  for binary in gawk grep sed; do
+  for binary in gawk grep gsed; do
     if ! which $binary >& /dev/null; then
       echo "ERROR: $binary binary not found in path. Aborting."
       exit 1
@@ -361,7 +361,7 @@ create_filter() {
               if [[ $a =~ [[:alpha:]] ]]; then
                 # converts only one comma: s/("[^"]+),([^"]+")/\1`\2/g;s/"//g
                 #a=$(echo $a | sed 's/\([[:alpha:]]*\)/"\1"/g')
-                a=$(echo $a | sed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
+                a=$(echo $a | gsed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
               fi
               query+="$comma(${a//,/|})"
             elif [[ ${PATHTOKENS[i]} =~ : ]]; then
@@ -377,7 +377,7 @@ create_filter() {
                          b=substr($0,index($0,":")+1,index($0,"]")-index($0,":")-1);
                          if(b>0) { print a ":" b-1 "]" };
                          if(b<=0) { print a ":]" } }' | \
-                  sed 's/\([0-9]\):\([0-9]\)/\1-\2/;
+                  gsed 's/\([0-9]\):\([0-9]\)/\1-\2/;
                        s/\[:\([0-9]\)/[0-\1/;
                        s/\([0-9]\):\]/\1-9999999]/')"
                 fi
@@ -389,7 +389,7 @@ create_filter() {
               a=${PATHTOKENS[i]#[}
               a=${a%]}
               if [[ $a =~ [[:alpha:]] ]]; then
-                a=$(echo $a | sed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
+                a=$(echo $a | gsed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
               else
                 [[ $i -gt 0 ]] && comma=","
               fi
@@ -493,7 +493,7 @@ parse_value () {
     ''|[!0-9]) throw "EXPECTED value GOT ${token:-EOF}" ;;
     *) value=$token
        # if asked, replace solidus ("\/") in json strings with normalized value: "/"
-       [ "$NORMALIZE_SOLIDUS" -eq 1 ] && value=$(echo "$value" | sed 's#\\/#/#g')
+       [ "$NORMALIZE_SOLIDUS" -eq 1 ] && value=$(echo "$value" | gsed 's#\\/#/#g')
        isleaf=1
        [ "$value" = '""' ] && isempty=1
        ;;
@@ -542,7 +542,7 @@ flatten() {
     done <"$STDINFILE2"
     
     if [[ $highest -gt 0 ]]; then
-      sed -r 's/\[(([0-9]+|"[^"]+")[],]){'$((highest))'}(.*)/[\3/' \
+      gsed -r 's/\[(([0-9]+|"[^"]+")[],]){'$((highest))'}(.*)/[\3/' \
         "$STDINFILE2"
     else 
       cat "$STDINFILE2"
@@ -613,7 +613,7 @@ brief() {
 # Only show the value
 
     if [[ $BRIEF -eq 1 ]]; then
-      sed 's/^[^\t]*\t//;s/^"//;s/"$//;'
+      gsed 's/^[^\t]*\t//;s/^"//;s/"$//;'
     else
       cat
     fi
@@ -735,12 +735,12 @@ json() {
             closers[i]='}'
             comma[i]=
           }
-          let indent=(i+1)*4
+          let indent=`(i+1)`*4
           printf "${comma[i]}%${indent}s${path[i]}:\n" ""
           comma[i]=",\n"
         else
           # Array
-          if [[ ${arrays[i]} != 1 ]]; then
+         if [[ ${arrays[i]} != 1 ]]; then
             let indent=i*4
             printf "%${indent}s" ""
             echo "["
